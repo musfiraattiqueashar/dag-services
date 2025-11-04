@@ -8,3 +8,6 @@ dependencies = [
     "composio>=0.8.20",
     "langgraph>=1.0.1",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
