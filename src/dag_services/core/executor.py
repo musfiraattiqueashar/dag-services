@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Dict, Any, Annotated, Optional
 import operator
+import json
 
 from .validator import validate_dag
 from .resolver import resolve_inputs
@@ -23,20 +24,37 @@ class DAGExecutor:
     
     def execute(self, dag: Dict) -> Dict[str, Any]:
         """Execute a DAG and return results"""
+        print("\n" + "="*80)
+        print("Starting DAG Execution")
+        print("="*80)
+        
         if not validate_dag(dag):
             raise ValueError("Invalid DAG")
+        
+        print(f"\nDAG has {len(dag['nodes'])} nodes")
+        for node in dag["nodes"]:
+            deps = node.get("depends_on", [])
+            print(f"  • {node['id']} (tool: {node['tool']}) - depends on: {deps if deps else 'None'}")
         
         self.execution_tracker = {}
         graph = self._build_graph(dag)
         
         initial_state = {"results": {}}
+        print("\nExecuting graph...\n")
         final_state = graph.invoke(initial_state)
         
         # Verify each node executed once
+        print("\n" + "="*80)
+        print("Execution Summary")
+        print("="*80)
         for node in dag["nodes"]:
             count = self.execution_tracker.get(node["id"], 0)
-            if count != 1:
-                print(f"⚠️  Node {node['id']} executed {count} times (expected 1)")
+            status = "✓" if count == 1 else "X"
+            print(f"{status} Node {node['id']}: executed {count} time(s)")
+        
+        print("\n" + "="*80)
+        print("DAG Execution Complete")
+        print("="*80 + "\n")
         
         return final_state["results"]
     
@@ -93,18 +111,25 @@ class DAGExecutor:
                 self.execution_tracker[node_id] = 0
             self.execution_tracker[node_id] += 1
             
+            print(f"Executing Node: {node_id}")
+            print(f"Tool: {node_config['tool']}")
+            
             # Check dependencies
             depends_on = node_config.get("depends_on", [])
             if depends_on:
+                print(f"   Dependencies: {depends_on}")
                 completed = set(state["results"].keys())
                 if not all(dep in completed for dep in depends_on):
+                    print(f"Missing dependencies - skipping")
                     return {"results": {}}
+                print(f"   ✓ All dependencies met")
             
             # Resolve inputs and execute
+            print(f"   Input params: {node_config['inputs']}")
             resolved_inputs = resolve_inputs(node_config["inputs"], state["results"])
-            result = self.executor.execute(node_config["tool"], resolved_inputs)
+            print(f"   Resolved inputs: {json.dumps(resolved_inputs, indent=2)}")
             
-            print(f"✓ Executed {node_id} ({node_config['tool']})")
+            result = self.executor.execute(node_config["tool"], resolved_inputs)
             return {"results": {node_id: result}}
         
         return execute_node

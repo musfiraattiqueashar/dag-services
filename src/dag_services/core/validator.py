@@ -39,5 +39,5 @@ def validate_dag(dag: Dict) -> bool:
             print(f"❌ Node missing required fields")
             return False
     
-    print("✅ DAG validation passed")
+    print("DAG validation passed")
     return True
