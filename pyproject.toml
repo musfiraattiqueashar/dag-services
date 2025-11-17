@@ -1,7 +1,7 @@
 [project]
 name = "dag-services"
 version = "0.1.0"
-description = "Add your description here"
+description = "A framework for defining, validating, and executing directed acyclic graphs (DAGs) of tools and services."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
